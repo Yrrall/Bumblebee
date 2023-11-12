@@ -6,6 +6,8 @@ package cml.yoico;
 
 //import java.awt.Image;
 
+import java.awt.Graphics;
+import java.awt.Image;
 import java.awt.image.BufferedImage;
 //import java.awt.image.RenderedImage;
 import java.io.File;
@@ -36,6 +38,10 @@ public class Yoico {
         
         int fisieremodificate=0;
         
+            String modProgram="0"; // 0 = chubby mode; 1 = white background mode;
+            Scanner inputModProgram= new Scanner(System.in);
+            System.out.println("Modul chubby(0) sau modul whiteBackground(1): ");
+            modProgram="" + inputModProgram.nextLine();
         
             String locimg;
             Scanner inputlocimg= new Scanner(System.in);
@@ -47,10 +53,10 @@ public class Yoico {
             System.out.println("Calea catre folderul cu foldere: ");
             locfolder="" + inputlocfolder.nextLine();
             
-            String locatieerori;
-            Scanner inputlocerr= new Scanner(System.in);
-            System.out.println("Locatia destinatie a erorilor: ");
-            locatieerori="" + inputlocerr.nextLine();
+            //String locatieerori;
+            //Scanner inputlocerr= new Scanner(System.in);
+            //System.out.println("Locatia destinatie a erorilor: ");
+            //locatieerori="" + inputlocerr.nextLine();
             
             //String locdest;
             //Scanner inputlocdest= new Scanner(System.in);
@@ -86,22 +92,66 @@ public class Yoico {
         //}
         
         for(String test : fisier.list()){
-            System.out.println("[Progres] Lista cu fisierele in dosarul imagini: " + test);
-            int numenr = test.lastIndexOf(".");
-            String nume = test.substring(0, numenr);
-            //System.out.println(nume);
-            String extensie = test.substring(numenr);
-            //System.out.println(extensie);
-            if(".png".equalsIgnoreCase(extensie) || (".jpg".equalsIgnoreCase(extensie)) || (".jpeg".equalsIgnoreCase(extensie))){
-                String yoloyolo=fisier + "\\" + test;
-                String yoloyolodest=fisier + "\\" + nume + ".ico";
-                System.out.println("[Progres] Cale imagine pentru convertire: " + yoloyolo);
-                //BufferedImage io = ImageIO.read(new File(yoloyolo));
-        
-                //ICOEncoder.write(io, new File(yoloyolodest));
-                
-            }
-            
+            if(new File(fisier + "/" + test).isFile()){
+                System.out.println("[Progres] Lista cu fisierele in dosarul imagini: " + test);
+                int numenr = test.lastIndexOf(".");
+                String nume = test.substring(0, numenr);
+                //System.out.println(nume);
+                String extensie = test.substring(numenr);
+                //System.out.println(extensie);
+                if(".png".equalsIgnoreCase(extensie) || (".jpg".equalsIgnoreCase(extensie)) || (".jpeg".equalsIgnoreCase(extensie))){
+                    String yoloyolo=fisier + "\\" + test;
+                    String yoloyolodest=fisier + "\\" + nume + ".ico";
+                    System.out.println("[Progres] Cale imagine pentru convertire: " + yoloyolo);
+
+                    BufferedImage io = ImageIO.read(new File(yoloyolo));
+
+                    if(modProgram.equalsIgnoreCase("0")){ // chubby
+                        BufferedImage testYo=new BufferedImage(512,512,BufferedImage.TYPE_INT_ARGB);
+                        // Draw the image on to the buffered image
+                        Graphics bGr = testYo.getGraphics();
+                        bGr.drawImage(io.getScaledInstance(512, 512, Image.SCALE_FAST), 0, 0, null);
+                        bGr.dispose();
+                        ICOEncoder.write(testYo, new File(yoloyolodest));
+                    }else if(modProgram.equalsIgnoreCase("1")){
+                        int maxWidth = 512;
+                        int maxHeight = 512;
+
+                        // Get the original image dimensions
+                        int originalWidth = io.getWidth();
+                        int originalHeight = io.getHeight();
+
+                        // Calculate the scaling factors to fit within the specified maxWidth and maxHeight
+                        double widthScale = (double) maxWidth / originalWidth;
+                        double heightScale = (double) maxHeight / originalHeight;
+
+                        // Use the minimum scaling factor to preserve the aspect ratio
+                        double scale = Math.min(widthScale, heightScale);
+
+                        // Calculate the new dimensions
+                        int newWidth = (int) (originalWidth * scale);
+                        int newHeight = (int) (originalHeight * scale);
+
+                        // Create a BufferedImage for the scaled image
+                        BufferedImage scaledImage = new BufferedImage(512, 512, BufferedImage.TYPE_INT_ARGB);
+                        if(newWidth > newHeight){
+                            int diferentaHeight=512 - newHeight;
+                            int diferentaHeightPozitieCentru=diferentaHeight/2;
+                            scaledImage.getGraphics().drawImage(io, 0, diferentaHeightPozitieCentru, newWidth, newHeight, null);
+                        }else if(newWidth < newHeight){
+                            int diferentaWidth=512 - newWidth;
+                            int diferentaWidthPozitieCentru=diferentaWidth/2;
+                            scaledImage.getGraphics().drawImage(io, diferentaWidthPozitieCentru, 0, newWidth, newHeight, null);
+                        }else if(newWidth == newHeight){
+                            scaledImage.getGraphics().drawImage(io, 0, 0, newWidth, newHeight, null);
+                        }
+                        ICOEncoder.write(scaledImage, new File(yoloyolodest));
+                    }
+
+                    //ICOEncoder.write(io, new File(yoloyolodest));
+
+                }
+            }// daca este fisier
         } // ----------------------------------------------------- Icon Creator
         
         
@@ -129,8 +179,9 @@ public class Yoico {
                     Scanner fisieryo= new Scanner(xmlinside);
                     //System.out.println("yolosss");
                     
-                    File eroripotrivire = new File(locatieerori + "\\erori.log");
-                    eroripotrivire.createNewFile();
+                    
+                    //File eroripotrivire = new File(locatieerori + "\\erori.log");
+                    //eroripotrivire.createNewFile();
                     int linieyo=0;
                     while(fisieryo.hasNextLine()){
                         String linie = fisieryo.nextLine();
@@ -147,9 +198,9 @@ public class Yoico {
                             //    scriereerori.close();
                             //}
                             
-                            try {
-                                Files.write(Paths.get("" + eroripotrivire), ("Folderul " + buildpath + " are diferente in csv. \n").getBytes(), StandardOpenOption.APPEND);
-                            }catch (IOException e) {
+                            try{
+                                //Files.write(Paths.get("" + eroripotrivire), ("Folderul " + buildpath + " are diferente in csv. \n").getBytes(), StandardOpenOption.APPEND);
+                            }catch (Exception e) {
                                 //exception handling left as an exercise for the reader
                             }
                             
